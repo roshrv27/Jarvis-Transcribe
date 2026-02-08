@@ -6,7 +6,7 @@ A fast, local speech-to-text app for macOS that types directly into any applicat
 
 - 🎙️ **Voice to Text** - Speak naturally, text appears instantly
 - ⚡ **Fast & Local** - Uses Whisper AI locally (no internet needed)
-- 🎯 **Smart Hotkey** - Double-tap OPTION key to activate
+- 🎯 **Smart Hotkey** - Press and hold RIGHT OPTION key to activate
 - ⌨️ **Types Anywhere** - Works in any app (chat, documents, browser, etc.)
 - 🔒 **100% Private** - All processing happens on your Mac
 - 🎨 **Minimal UI** - Clean pill-shaped window shows status
@@ -52,9 +52,9 @@ source ~/.zshrc
 
 **How to use:**
 1. Click where you want text to appear
-2. **Double-tap OPTION key** (⌥⌥) quickly
+2. **Press and hold RIGHT OPTION key** (⌥ on the right side of keyboard)
 3. **Speak** - red pill window appears
-4. **Release OPTION** - text appears automatically!
+4. **Release RIGHT OPTION** - text appears automatically!
 
 ## ⚙️ Configuration
 
@@ -62,24 +62,22 @@ Edit settings in `~/.jarvisvoice/config.json`:
 
 ```json
 {
-  "hotkey": "alt_double",     // Options: "alt_double", "ctrl", "alt", "cmd"
+  "hotkey": "alt_r",          // Right Option key (hardcoded in this version)
   "model_size": "base",       // Options: "tiny", "base", "small", "medium", "large-v3"
   "language": "en",           // Language code (en, es, fr, de, etc.)
-  "auto_paste": false,        // Auto-add space after text
+  "auto_paste": true,         // Auto-add space after text
   "typing_delay": 0.01        // Delay before typing (seconds)
 }
 ```
 
-### Changing the Hotkey
+### Hotkey Configuration
 
-**Option 1: Double-tap OPTION key** (default)
-- Tap OPTION twice quickly to start
-- Release to stop
+**Right OPTION Key** (default)
+- Press and hold the RIGHT OPTION key (⌥ on right side)
+- Speak while holding
+- Release to transcribe
 
-**Option 2: Hold a key**
-Change config to: `"hotkey": "ctrl"` or `"alt"` or `"cmd"`
-- Hold the key while speaking
-- Release to type
+**Note:** This version is configured to use the RIGHT OPTION key specifically for better control. The left Option key is intentionally ignored to avoid conflicts with system shortcuts.
 
 ### Available Models
 

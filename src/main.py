@@ -17,6 +17,7 @@ import sounddevice as sd
 import numpy as np
 from pynput import keyboard
 from pynput.keyboard import Controller as KeyboardController, Key
+from pynput.mouse import Controller as MouseController, Button
 from faster_whisper import WhisperModel
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject, QRectF
@@ -70,7 +71,12 @@ class AudioRecorder:
                 self.stream.close()
             except:
                 pass
-        return np.concatenate(self.audio_data) if self.audio_data else np.array([])
+        if not self.audio_data:
+            return np.array([], dtype=np.float32)
+        # Concatenate and flatten to 1D array
+        audio = np.concatenate(self.audio_data)
+        audio = audio.flatten()  # Ensure 1D array
+        return audio
 
     def _audio_callback(self, indata, frames, time_info, status):
         """Callback for audio stream"""
@@ -193,7 +199,10 @@ class FloatingWindow(QWidget):
                 self.hide()
             else:
                 self.show()
+                self.raise_()
+                self.activateWindow()
                 self.update()  # Redraw
+                print(f"Window shown: {status}")
 
 
 class Communicate(QObject):
@@ -217,6 +226,7 @@ class JarvisVoiceApp:
         self.recorder = AudioRecorder()
         self.transcriber = None
         self.keyboard = KeyboardController()
+        self.mouse = MouseController()
 
         # Qt app for floating window
         self.qt_app = QApplication(sys.argv)
@@ -230,15 +240,17 @@ class JarvisVoiceApp:
         self.hotkey_pressed = False
         self.model_loaded = False
 
+        # Create status item first (needed by _setup_menu)
+        self.status_item = rumps.MenuItem("Status: Loading model...")
+
         # Menu bar app
         self.app = rumps.App("Jarvis Voice", "🎤")
         self._setup_menu()
 
-        # Start hotkey listener
+        # Start hotkey listener with right Option key
         self._start_hotkey_listener()
 
         # Load model in background
-        self.status_item = rumps.MenuItem("Status: Loading model...")
         threading.Thread(target=self._init_model, daemon=True).start()
 
     def _load_config(self) -> dict:
@@ -259,11 +271,16 @@ class JarvisVoiceApp:
     def _init_model(self):
         """Initialize Whisper model"""
         try:
+            print("Initializing Whisper model...")
             self.transcriber = WhisperTranscriber(self.config.get("model_size", "base"))
             self.model_loaded = True
             self.status_item.title = "Status: Ready"
+            print("Model initialized successfully")
         except Exception as e:
             print(f"Error loading model: {e}")
+            import traceback
+
+            traceback.print_exc()
             self.status_item.title = f"Status: Error - {e}"
 
     def _setup_menu(self):
@@ -296,39 +313,37 @@ class JarvisVoiceApp:
         return hotkey_map.get(hotkey, keyboard.Key.ctrl)
 
     def _start_hotkey_listener(self):
-        """Start listening for global hotkeys"""
-        hotkey = self.config.get("hotkey", "ctrl")
-
-        if hotkey == "fn":
-            print("Note: Fn key detection is limited on macOS. Using Ctrl instead.")
-            hotkey = "ctrl"
-
-        target_key = self._get_hotkey_key()
+        """Start listening for global hotkeys - using right Option key"""
+        print("Hotkey listener started. Press and hold RIGHT Option key to record.")
 
         def on_press(key):
             try:
-                if key == target_key or (hasattr(key, "name") and key.name == hotkey):
+                # Check for right Option key (alt_r)
+                if key == keyboard.Key.alt_r:
                     if not self.hotkey_pressed:
                         self.hotkey_pressed = True
+                        print("RIGHT Option key pressed - starting recording...")
                         self._toggle_recording()
-            except:
-                pass
+            except Exception as e:
+                print(f"Error in on_press: {e}")
 
         def on_release(key):
             try:
-                if key == target_key or (hasattr(key, "name") and key.name == hotkey):
+                # Check for right Option key (alt_r)
+                if key == keyboard.Key.alt_r:
                     self.hotkey_pressed = False
+                    print("RIGHT Option key released - stopping recording...")
                     if self.is_recording:
                         self._toggle_recording()
-            except:
-                pass
+            except Exception as e:
+                print(f"Error in on_release: {e}")
 
         self.hotkey_listener = keyboard.Listener(
             on_press=on_press, on_release=on_release
         )
         self.hotkey_listener.daemon = True
         self.hotkey_listener.start()
-        print(f"Hotkey listener started. Press and hold '{hotkey}' to record.")
+        print("Hotkey listener started. Press and hold RIGHT Option key to record.")
 
     def _toggle_recording(self, _=None):
         """Toggle recording on/off"""
@@ -401,6 +416,8 @@ class JarvisVoiceApp:
     def _type_text(self, text: str):
         """Type text into active application"""
         try:
+            # Click to ensure focus is on the correct window (not terminal)
+            self.mouse.click(Button.left)
             time.sleep(0.1)
             self.keyboard.type(text)
 
@@ -422,14 +439,14 @@ class JarvisVoiceApp:
         settings_text = f"""
 Current Settings:
 
-Hotkey: {hotkey}
+Hotkey: Right Option Key (alt_r)
 Model: {model}
 Language: {self.config.get("language", "en")}
 
 To change settings, edit:
 {CONFIG_FILE}
 
-Valid hotkeys: fn, ctrl, alt, cmd, shift, space, tab, esc
+Note: This version uses Right Option key only
 Valid models: tiny, base, small, medium, large-v3
 
 After editing, restart Jarvis Voice.
@@ -442,10 +459,9 @@ After editing, restart Jarvis Voice.
 
     def _show_about(self, _):
         """Show about dialog"""
-        hotkey = self.config.get("hotkey", "ctrl")
         rumps.alert(
             title="About Jarvis Voice",
-            message=f"Jarvis Voice v1.2\n\nLocal speech-to-text for macOS\n\nPress and hold '{hotkey}' to record.\n\nPowered by OpenAI Whisper",
+            message="Jarvis Voice v1.2\n\nLocal speech-to-text for macOS\n\nPress and hold RIGHT OPTION KEY to record.\n\nPowered by OpenAI Whisper",
         )
 
     def _quit(self, _):
@@ -457,10 +473,18 @@ After editing, restart Jarvis Voice.
 
     def run(self):
         """Run the application"""
-        qt_thread = threading.Thread(target=self.qt_app.exec, daemon=True)
-        qt_thread.start()
+        # Hide floating window initially
+        self.floating_window.hide()
+
+        # Create a rumps timer to process Qt events periodically
+        self._qt_timer = rumps.Timer(self._process_qt_events, 0.016)  # ~60fps
+        self._qt_timer.start()
 
         self.app.run()
+
+    def _process_qt_events(self, _):
+        """Process Qt events to keep floating window responsive"""
+        self.qt_app.processEvents()
 
 
 def main():
@@ -472,7 +496,10 @@ def main():
         print("\nShutting down...")
         sys.exit(0)
     except Exception as e:
+        import traceback
+
         print(f"Fatal error: {e}")
+        traceback.print_exc()
         rumps.alert(title="Jarvis Voice Error", message=f"Fatal error: {e}")
         sys.exit(1)
 

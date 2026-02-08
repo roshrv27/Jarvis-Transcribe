@@ -49,9 +49,9 @@ cd "/path/to/this/folder"
    - macOS will ask for **Accessibility Access** → Go to System Preferences and enable it
 
 3. **Using Jarvis Voice**
-   - Press and **HOLD** the Ctrl key
+   - Press and **HOLD** the RIGHT Option key (⌥ on right side)
    - Speak naturally
-   - Release Ctrl
+   - Release RIGHT Option key
    - Text appears automatically in your active app!
 
 ## ⚙️ Configuration
@@ -62,9 +62,12 @@ open ~/.jarvisvoice/config.json
 ```
 
 Change settings:
-- `hotkey`: "ctrl", "alt", "cmd", "shift", "space", "tab", "esc"
+- `hotkey`: "alt_r" (Right Option key - hardcoded in this version)
 - `model_size`: "tiny", "base", "small", "medium", "large-v3"
 - `language`: "en", "es", "fr", "de", "hi", etc. (99 languages supported!)
+
+Note: This version uses the RIGHT Option key exclusively to avoid conflicts
+with system shortcuts and provide better control.
 
 ## 🎯 Features
 
@@ -121,4 +124,4 @@ Or manually delete:
 
 Your personal speech-to-text assistant is ready to use!
 
-Press Ctrl and speak to see the magic happen! 🎤✨
+Press and hold RIGHT Option key and speak to see the magic happen! 🎤✨
