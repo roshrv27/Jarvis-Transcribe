@@ -53,9 +53,13 @@ A fast, local speech-to-text app for macOS that types directly into any applicat
    **B. Accessibility Access** (Required for typing)
    - System Preferences → Privacy & Security → Accessibility
    - Click **+** button
-   - Navigate to: `/Library/Frameworks/Python.framework/Versions/3.10/bin/`
-   - Select **python3.10**
+   - Navigate to one of these locations:
+     - `/opt/homebrew/Cellar/python@3.10/3.10.19_3/Frameworks/Python.framework/Versions/3.10/Resources/` (Homebrew Python - **Recommended**)
+     - OR `/Library/Frameworks/Python.framework/Versions/3.10/bin/` (python.org Python)
+   - Select **Python** or **python3.10**
    - Enable the checkbox ✅
+   
+   **Note:** If the python.org version appears greyed out in Finder, use the Homebrew version instead.
    
    **C. (Optional) Screen Recording**
    - Some macOS versions may require this for window detection
