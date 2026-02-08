@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+*.pid
+
+# Models (large files)
+models/
+*.bin
+*.pt
+*.pth
+
+# Temp files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Config (user-specific)
+# Keep config directory structure but ignore user data
+config.json
+
+# whisper.cpp build artifacts (if any)
+whisper.cpp/build/
+whisper.cpp/models/*.bin
+
+# Test outputs
+test_output/
+test-outputs/
