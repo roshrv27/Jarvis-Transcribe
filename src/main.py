@@ -175,7 +175,7 @@ class FloatingWindow(QWidget):
 
         # Draw text
         painter.setPen(QColor(255, 255, 255))
-        font = QFont("SF Pro", 16, QFont.Weight.Medium)
+        font = QFont("Helvetica Neue", 16, QFont.Weight.Medium)
         painter.setFont(font)
 
         # Center text
