@@ -1,137 +1,108 @@
 # 🎤 Jarvis Voice
 
-A minimalistic, high-performance local speech-to-text app for macOS powered by OpenAI Whisper with Metal GPU acceleration.
+A minimalistic, high-performance **AI-powered speech-to-text** app for macOS using **OpenAI Whisper** neural network with local processing.
 
-## ✨ Features
+## 🤖 AI & Neural Network Architecture
 
-- 🎯 **Right Option Key** - Press and hold to record, release to transcribe
-- 🔊 **Audio Feedback** - Choose from 14 notification sounds (plays on start & stop)
-- 📝 **Auto-Corrections** - Teach the app your custom words and phrases
-- 💻 **Smart Typing** - Automatically restores focus to your previous app before typing
-- 🔒 **100% Local** - Uses Whisper.cpp with Metal GPU, no internet required
-- ⚡ **Fast Performance** - ~1.5-2x real-time transcription on Apple Silicon
-- 🎨 **Menu Bar App** - Clean interface with easy access to all settings
-- 🧠 **Memory Safe** - Auto-limits recording to 90 seconds max
-- 🌍 **Multi-language** - Supports 99 languages
+Jarvis Voice leverages **OpenAI Whisper**, a state-of-the-art **neural network** specifically designed for **Automatic Speech Recognition (ASR)** and **Natural Language Processing (NLP)**.
 
-## 🏗️ Architecture
+### What is Whisper?
+
+Whisper is a **deep learning model** (transformer-based neural network) trained on 680,000 hours of multilingual audio data. It performs multiple **NLP tasks** simultaneously:
+
+- 🎯 **Speech Recognition** - Converts audio to text with high accuracy
+- 🌍 **Language Identification** - Auto-detects 99 languages 
+- 📝 **Transcription** - Handles accents, background noise, and technical vocabulary
+- 🔄 **Translation** - Can transcribe and translate in real-time
+
+### Model Architecture
 
 ```mermaid
 flowchart TB
-    subgraph Input["🎤 Input Layer"]
-        A[Right Option Key] --> B[Global Hotkey Listener]
-        B --> C{Recording?}
+    subgraph Input["🎤 Audio Input"]
+        A[16kHz Mono Audio] --> B[Mel Spectrogram]
+        B --> C[Transformer Encoder]
     end
 
-    subgraph Audio["🎵 Audio Processing"]
-        C -->|Start| D[AudioRecorder]
-        D --> E[SoundDevice Stream]
-        E --> F[Memory-Efficient Buffer<br/>deque maxlen=703]
-        C -->|Stop| G[Concatenate Audio]
+    subgraph AI["🧠 Neural Network Processing"]
+        C --> D[Multi-Head Attention]
+        D --> E[Self-Attention Mechanism]
+        E --> F[Feature Extraction]
+        F --> G[Token Prediction]
     end
 
-    subgraph Transcription["🧠 AI Transcription"]
-        G --> H[WhisperTranscriber]
-        H --> I[whisper.cpp CLI]
-        I --> J[Metal GPU Acceleration]
-        J --> K[Raw Text Output]
+    subgraph NLP["📝 Natural Language Processing"]
+        G --> H[Language Detection]
+        H --> I[Text Generation]
+        I --> J[Auto-Correction Engine]
+        J --> K[Final Text Output]
     end
 
-    subgraph Processing["⚙️ Text Processing"]
-        K --> L[Auto-Correction Engine]
-        L --> M[Regex Pattern Matching]
-        M --> N[Corrected Text]
+    subgraph Local["💻 Local Processing"]
+        L[Metal GPU Acceleration] -.-> D
+        M[whisper.cpp C++ Backend] -.-> AI
     end
 
-    subgraph Output["⌨️ Output Layer"]
-        N --> O[Focus Manager]
-        O --> P[Restore Active App]
-        P --> Q[Virtual Keyboard]
-        Q --> R[Typed Text + Space]
-    end
-
-    subgraph UI["🎨 User Interface"]
-        S[rumps Menu Bar] --> T[Recording Sound Menu]
-        S --> U[Corrections Manager]
-        S --> V[Settings & About]
-    end
-
-    D -.->|Notification| W[afplay System Sound]
+    K --> N[Virtual Keyboard Typing]
 ```
 
-## 📊 Data Flow
+### Why Local AI?
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Hotkey as Keyboard Listener
-    participant Audio as AudioRecorder
-    participant Sound as Sound System
-    participant Whisper as Whisper.cpp
-    participant TextProc as Text Processor
-    participant OS as macOS
+✅ **Privacy** - Your voice never leaves your Mac  
+✅ **Speed** - ~1.5-2x real-time transcription on Apple Silicon  
+✅ **Offline** - Works without internet  
+✅ **Customizable** - Choose from 5 model sizes based on accuracy needs
 
-    User->>Hotkey: Hold Right Option
-    Hotkey->>Audio: Start Recording
-    Hotkey->>Sound: Play Notification
-    Sound-->>User: Audio Feedback
-    
-    User->>Hotkey: Release Key
-    Hotkey->>Audio: Stop Recording
-    Audio->>Whisper: Audio Data (16kHz)
-    Whisper->>Whisper: GPU Transcription
-    Whisper->>TextProc: Raw Text
-    TextProc->>TextProc: Apply Corrections
-    TextProc->>OS: Restore Focus
-    OS-->>TextProc: App Activated
-    TextProc->>OS: Type Text
-    OS-->>User: Text Appears ✨
-```
+## ✨ Features
+
+- 🎯 **Right Option Key** - Press and hold to record (up to 90 seconds)
+- 🔊 **Dual Audio Feedback** - Notification sound on start AND stop
+- 📝 **Auto-Corrections** - Teach the AI your custom words and phrases
+- 🧠 **Smart NLP** - Handles accents, background noise, technical terms
+- 💻 **Focus Restoration** - Returns to your previous app before typing
+- 🔒 **100% Local** - Neural network runs on your Mac (Metal GPU)
+- ⚡ **Fast** - Real-time transcription with Metal acceleration
+- 🎨 **Menu Bar App** - Clean interface with 14 notification sounds
+- 🌍 **Multi-language** - Supports 99 languages via AI language detection
 
 ## 🚀 Performance
 
 | Metric | Value |
 |--------|-------|
-| Recording Latency | ~128ms (imperceptible) |
-| Memory Usage | Capped at ~7.5MB (90s max) |
-| Transcription Speed | 1.5-2x real-time (Apple Silicon) |
-| Total Pipeline | 2-4 seconds for 5s speech |
-| CPU Usage | Minimal during recording |
+| **AI Model** | OpenAI Whisper (Transformer) |
+| **Backend** | whisper.cpp (C++/Metal) |
+| **Latency** | ~128ms (imperceptible) |
+| **Speed** | 1.5-2x real-time |
+| **Memory** | Capped at ~7.5MB (90s max) |
+| **Languages** | 99 supported |
+| **Processing** | 100% Local (Apple Silicon GPU) |
 
-## 📋 Requirements
+## 📦 Installation
 
+### Prerequisites
 - macOS 10.15+ (Intel or Apple Silicon)
 - Python 3.10+
 - Microphone access
-- Accessibility permissions (for typing)
-
-## 🛠️ Installation
 
 ### Quick Install
 
 ```bash
 cd ~/Applications/JarvisVoice
-./setup.sh
+pip install -r requirements.txt
 ```
 
-### Manual Install
+### System Dependencies
 
-1. **Install system dependencies:**
 ```bash
 brew install portaudio ffmpeg
 ```
 
-2. **Install Python dependencies:**
-```bash
-pip install -r requirements.txt
-```
-
-3. **Download Whisper model:**
-Models download automatically on first run (~150MB for base model).
+**Note:** The Whisper model (~150MB for base) downloads automatically on first run.
 
 ## 🎮 Usage
 
-### Start the app:
+### Start the App
+
 ```bash
 jarvis
 ```
@@ -142,19 +113,21 @@ cd ~/Applications/JarvisVoice
 python src/main.py
 ```
 
-### How to use:
-1. **Hold Right Option key** 🔊 hear notification sound (recording starts)
-2. **Speak clearly** - record up to 90 seconds
-3. **Release key** 🔊 hear notification sound (recording stops)
-4. **Text appears** in your active application ✨
+### How to Use
 
-## ⚙️ Configuration
+1. **Hold Right Option key** 🔊 (hear notification sound - recording starts)
+2. **Speak naturally** - The AI transcribes your speech using neural network processing
+3. **Release key** 🔊 (hear notification sound - recording stops)
+4. **Text appears** automatically in your active application ✨
+
+**Max recording time:** 90 seconds
+
+## ⚙️ AI Model Configuration
 
 Edit `~/.jarvisvoice/config.json`:
 
 ```json
 {
-  "hotkey": "ctrl",
   "model_size": "base",
   "language": "en",
   "auto_paste": true,
@@ -162,127 +135,67 @@ Edit `~/.jarvisvoice/config.json`:
 }
 ```
 
-### Available Models:
-| Model | Size | Speed | Accuracy | Best For |
-|-------|------|-------|----------|----------|
-| `tiny` | ~39MB | ⚡⚡⚡ Fastest | ⭐⭐ Basic | Testing, quick notes |
-| `base` | ~150MB | ⚡⚡ Fast | ⭐⭐⭐ Good | Daily use ⭐ **Recommended** |
-| `small` | ~466MB | ⚡ Medium | ⭐⭐⭐⭐ Better | Accuracy priority |
-| `medium` | ~1.5GB | 🐢 Slower | ⭐⭐⭐⭐⭐ High | Professional use |
-| `large-v3` | ~3GB | 🐢🐢 Slowest | ⭐⭐⭐⭐⭐ Best | Maximum accuracy |
+### Available Neural Network Models
 
-### Notification Sounds (14 options):
-- **Ping** - Clean, high-pitched (default)
-- **Tink** - Light metallic tap
-- **Pop** - Bubble pop sound
-- **Glass** - Gentle glass tap
+| Model | Size | Accuracy | Speed | Best For |
+|-------|------|----------|-------|----------|
+| `tiny` | ~39MB | ⭐⭐ Basic | ⚡⚡⚡ Fastest | Testing |
+| `base` | ~150MB | ⭐⭐⭐ Good | ⚡⚡ Fast | **Daily Use** ⭐ |
+| `small` | ~466MB | ⭐⭐⭐⭐ Better | ⚡ Medium | Accuracy priority |
+| `medium` | ~1.5GB | ⭐⭐⭐⭐⭐ High | 🐢 Slower | Professional |
+| `large-v3` | ~3GB | ⭐⭐⭐⭐⭐ Best | 🐢🐢 Slowest | Maximum accuracy |
+
+### Notification Sounds
+
+Choose from 14 macOS system sounds:
+- **Ping** (default) - Clean, high-pitched
+- **Tink** - Light metallic tap  
+- **Pop** - Bubble pop
+- **Glass** - Gentle tap
 - **Hero** - Triumphant fanfare
 - ...and 9 more!
 
-Access via menu: 🎤 → 🔔 Recording Sound
+Access via: 🎤 Menu → 🔔 Recording Sound
 
-## 📝 Auto-Corrections
+## 📝 Auto-Corrections (NLP Enhancement)
 
-Teach Jarvis your custom words:
+Teach the AI model your vocabulary:
 
-1. Click 🎤 menu → 📝 Add Correction
-2. Enter what the app heard (e.g., "jarves")
-3. Enter what you meant (e.g., "Jarvis")
-4. Future transcriptions automatically correct!
+1. Click 🎤 → 📝 Add Correction
+2. Enter what you said (e.g., "jarves")
+3. Enter correct spelling (e.g., "Jarvis")
+4. Future transcriptions automatically apply corrections!
 
-### Manage corrections:
-- 📚 View Corrections - See all saved corrections
-- 🗑️ Delete Correction - Remove unwanted corrections
+The AI learns and adapts using pattern matching with regex.
+
+## 🔧 Technical Stack
+
+- **AI Model:** OpenAI Whisper (Transformer Neural Network)
+- **Backend:** whisper.cpp (C++ implementation)
+- **Acceleration:** Apple Metal GPU (M1/M2/M3)
+- **Audio:** sounddevice (PortAudio)
+- **UI:** rumps (native macOS menu bar)
+- **Input:** pynput (global hotkeys)
+- **Output:** pynput (virtual keyboard)
 
 ## 🛠️ Troubleshooting
 
 ### "Microphone access denied"
-1. **System Preferences** → **Security & Privacy** → **Privacy** → **Microphone**
-2. Add your terminal app (Terminal/iTerm)
-3. Restart Jarvis Voice
+System Preferences → Security & Privacy → Privacy → Microphone → Add Terminal
 
-### "Accessibility permission required"
-1. **System Preferences** → **Security & Privacy** → **Privacy** → **Accessibility**
-2. Add your terminal app
-3. Restart Jarvis Voice
+### "Model not loading"
+- First run downloads the neural network (~150MB)
+- Check internet connection for initial download
 
 ### Recording not working
-- Check microphone is set as default input: **System Preferences** → **Sound** → **Input**
+- Check microphone is default input: System Preferences → Sound → Input
 - Ensure no other app is using the microphone
-
-### Model not loading
-- First run downloads the model (~150MB)
-- Check internet connection for initial download
-- Verify `~/.jarvisvoice/` directory exists
-
-## 📁 File Structure
-
-```
-JarvisVoice/
-├── src/
-│   ├── main.py                 # Main application (~430 lines)
-│   └── main_working.py         # Backup version
-├── whisper_cpp_wrapper.py      # Whisper.cpp integration
-├── requirements.txt            # Python dependencies
-├── setup.sh                    # Installation script
-├── start.sh                    # Launcher script
-├── launch.sh                   # Alternative launcher
-├── diagnostic.sh               # Diagnostic tool
-├── fix-permissions.sh          # Permission fixer
-├── uninstall.sh                # Uninstall script
-└── README.md                   # This file
-```
-
-## 🔧 Technical Details
-
-### Audio Pipeline
-- **Sample Rate:** 16,000 Hz (optimal for Whisper)
-- **Channels:** Mono (1 channel)
-- **Format:** 32-bit float (native)
-- **Blocksize:** 2048 samples (~128ms latency)
-- **Buffer:** Memory-capped deque (max 90 seconds)
-
-### AI/ML Stack
-- **Engine:** whisper.cpp (C++ implementation)
-- **Acceleration:** Apple Metal GPU (M1/M2/M3)
-- **Wrapper:** Python subprocess call
-- **Languages:** 99 supported (ISO 639-1)
-
-### UI Framework
-- **Menu Bar:** rumps (native macOS)
-- **Notifications:** macOS native notifications
-- **Sounds:** macOS system sounds via `afplay`
-
-### Dependencies
-- `rumps` - Menu bar app framework
-- `sounddevice` - Audio recording (PortAudio)
-- `numpy` - Audio processing
-- `pynput` - Global hotkeys & typing
-- `soundfile` - WAV file handling
-
-## 🎯 Optimizations
-
-The app has been heavily optimized:
-
-- ✅ **Removed Qt GUI** - No more visual indicator (using audio instead)
-- ✅ **Eliminated 60fps timer** - Saved CPU cycles
-- ✅ **Memory-safe buffer** - Auto-limits to 90s max
-- ✅ **Non-blocking operations** - Async app detection
-- ✅ **Efficient audio concat** - Single operation
-- ✅ **Dictionary lookups** - O(1) for sound descriptions
-- ✅ **Reduced from 1008 to ~430 lines** - 57% smaller codebase
-
-## 🤝 Credits
-
-- **Whisper** by OpenAI - Speech recognition model
-- **whisper.cpp** by ggerganov - Fast C++ implementation
-- **rumps** by jaredks - macOS menu bar apps
-- **Inspired by** Aqua Voice - The original fluid voice interface
 
 ## 📄 License
 
-MIT License - Feel free to use, modify, and distribute!
+MIT License
 
 ---
 
-**Made with ❤️ for macOS users who love efficiency**
+**Powered by OpenAI Whisper Neural Network** 🧠✨  
+*Local AI. Private. Fast. Accurate.*
