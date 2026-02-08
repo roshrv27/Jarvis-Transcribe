@@ -159,6 +159,10 @@ class JarvisVoiceApp:
         self.app = rumps.App("Jarvis Voice", "🎤", quit_button=None)
         self._setup_menu()
 
+        # Print startup message first
+        print("🎤 Starting Jarvis Voice...", flush=True)
+        print("   Press and hold RIGHT Option key to record", flush=True)
+
         # Start hotkey listener
         self._start_hotkey_listener()
 
@@ -218,7 +222,7 @@ class JarvisVoiceApp:
             self.transcriber = WhisperTranscriber(model_size)
             self.model_loaded = True
             self.status_item.title = "Status: Ready"
-            print(f"Model loaded successfully: {model_size}", flush=True)
+            print(f"Model loaded successfully: {model_size}\n", flush=True)
         except Exception as e:
             print(f"Error loading model: {e}", flush=True)
             self.status_item.title = f"Status: Error - {e}"
@@ -290,7 +294,10 @@ class JarvisVoiceApp:
         )
         self.hotkey_listener.daemon = True
         self.hotkey_listener.start()
-        print("Hotkey listener started. Press and hold RIGHT Option key to record.")
+        print(
+            "Hotkey listener started. Press and hold RIGHT Option key to record.",
+            flush=True,
+        )
 
     def _toggle_recording(self, _=None):
         """Toggle recording on/off"""
@@ -601,8 +608,6 @@ Valid models: tiny, base, small, medium, large-v3
     def run(self):
         """Run the application"""
         try:
-            print("🎤 Starting Jarvis Voice...")
-            print("   Press and hold RIGHT Option key to record")
             self.app.run()
         except Exception as e:
             print(f"Error: {e}")
