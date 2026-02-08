@@ -293,7 +293,9 @@ class JarvisVoiceApp:
             try:
                 if key == keyboard.Key.alt_r and not self.hotkey_pressed:
                     self.hotkey_pressed = True
-                    print("RIGHT Option key pressed - starting recording...")
+                    print(
+                        "\nRIGHT Option key pressed - starting recording...", flush=True
+                    )
                     self._toggle_recording()
             except Exception as e:
                 print(f"Error in on_press: {e}")
@@ -302,7 +304,10 @@ class JarvisVoiceApp:
             try:
                 if key == keyboard.Key.alt_r:
                     self.hotkey_pressed = False
-                    print("RIGHT Option key released - stopping recording...")
+                    print(
+                        "\nRIGHT Option key released - stopping recording...",
+                        flush=True,
+                    )
                     if self.is_recording:
                         self._toggle_recording()
             except Exception as e:
@@ -496,7 +501,10 @@ class JarvisVoiceApp:
                 except:
                     pass
 
-            self.keyboard.type(text)
+            # Type character by character to avoid timing issues
+            for char in text:
+                self.keyboard.type(char)
+                time.sleep(0.01)
 
             if self.config.get("auto_paste", True):
                 time.sleep(0.03)
@@ -505,8 +513,24 @@ class JarvisVoiceApp:
         except Exception as e:
             print(f"Error typing text: {e}")
 
+    def _activate_app(self):
+        """Bring app windows to front before showing dialogs"""
+        try:
+            run(
+                [
+                    "osascript",
+                    "-e",
+                    'tell application "System Events" to tell process "Python" to set frontmost to true',
+                ],
+                capture_output=True,
+                timeout=1,
+            )
+        except:
+            pass
+
     def _show_settings(self, _):
         """Show settings"""
+        self._activate_app()
         model = self.config["model_size"]
         settings_text = f"""
 Current Settings:
@@ -524,6 +548,7 @@ Valid models: tiny, base, small, medium, large-v3
 
     def _open_config(self, _):
         """Open config folder"""
+        self._activate_app()
         try:
             run(["open", str(CONFIG_DIR)], check=True)
         except Exception as e:
@@ -531,6 +556,7 @@ Valid models: tiny, base, small, medium, large-v3
 
     def _show_about(self, _):
         """Show about dialog"""
+        self._activate_app()
         rumps.alert(
             title="About Jarvis Voice",
             message="Jarvis Voice v1.2\n\nLocal speech-to-text for macOS\n\nPress and hold RIGHT OPTION KEY to record.\n\nPowered by OpenAI Whisper",
@@ -538,6 +564,7 @@ Valid models: tiny, base, small, medium, large-v3
 
     def _add_correction(self, _):
         """Add auto-correction"""
+        self._activate_app()
         try:
             wrong_text = rumps.Window(
                 title="Add Correction",
@@ -569,6 +596,7 @@ Valid models: tiny, base, small, medium, large-v3
 
     def _view_corrections(self, _):
         """View corrections"""
+        self._activate_app()
         try:
             corrections_map = self.corrections.get("auto_corrections", {})
             if not corrections_map:
@@ -585,6 +613,7 @@ Valid models: tiny, base, small, medium, large-v3
 
     def _delete_correction(self, _):
         """Delete correction"""
+        self._activate_app()
         try:
             corrections_map = self.corrections.get("auto_corrections", {})
             if not corrections_map:
