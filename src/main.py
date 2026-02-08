@@ -601,7 +601,8 @@ Valid models: tiny, base, small, medium, large-v3
     def run(self):
         """Run the application"""
         try:
-            print("Starting Jarvis Voice...")
+            print("🎤 Starting Jarvis Voice...")
+            print("   Press and hold RIGHT Option key to record")
             self.app.run()
         except Exception as e:
             print(f"Error: {e}")
