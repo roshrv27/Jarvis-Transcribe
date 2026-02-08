@@ -4,18 +4,9 @@
 
 cd "$(dirname "$0")"
 
-# Check if virtual environment exists
-if [ ! -d "venv" ]; then
-    echo "❌ Virtual environment not found. Running setup first..."
-    ./setup.sh
-fi
-
-# Activate virtual environment
-source venv/bin/activate
-
-# Start the app
+# Start the app using system Python
 echo "🎤 Starting Jarvis Voice..."
-echo "   Press Fn key to start/stop recording"
+echo "   Press and hold RIGHT Option key to record"
 echo ""
 
-python3 src/main.py
+/Library/Frameworks/Python.framework/Versions/3.10/bin/python3 -u src/main.py

@@ -9,8 +9,10 @@ import os
 import threading
 import json
 import time
+import re
 from pathlib import Path
 from typing import Optional
+from subprocess import run
 
 import rumps
 import sounddevice as sd
@@ -18,7 +20,10 @@ import numpy as np
 from pynput import keyboard
 from pynput.keyboard import Controller as KeyboardController, Key
 from pynput.mouse import Controller as MouseController, Button
-from faster_whisper import WhisperModel
+
+# Add whisper.cpp wrapper to path
+sys.path.insert(0, str(Path.home() / "Applications" / "JarvisVoice"))
+from whisper_cpp_wrapper import WhisperCPP
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject, QRectF
 from PyQt6.QtGui import QFont, QPainter, QColor, QBrush, QPainterPath
@@ -26,12 +31,24 @@ from PyQt6.QtGui import QFont, QPainter, QColor, QBrush, QPainterPath
 # Configuration
 CONFIG_DIR = Path.home() / ".jarvisvoice"
 CONFIG_FILE = CONFIG_DIR / "config.json"
+VOCAB_FILE = CONFIG_DIR / "vocabulary.json"
+CORRECTIONS_FILE = CONFIG_DIR / "corrections.json"
+
 DEFAULT_CONFIG = {
     "hotkey": "ctrl",
     "model_size": "base",
     "language": "en",
     "typing_delay": 0.01,
     "auto_paste": True,
+}
+
+DEFAULT_VOCABULARY = {
+    "custom_words": [],  # Words to boost recognition
+    "context_phrases": [],  # Domain-specific phrases
+}
+
+DEFAULT_CORRECTIONS = {
+    "auto_corrections": {},  # Empty by default - user adds their own
 }
 
 
@@ -85,9 +102,9 @@ class AudioRecorder:
 
 
 class WhisperTranscriber:
-    """Handles Whisper transcription"""
+    """Handles Whisper transcription using whisper.cpp"""
 
-    def __init__(self, model_size="base"):
+    def __init__(self, model_size="base.en"):
         self.model_size = model_size
         self.model = None
         self._load_model()
@@ -95,16 +112,9 @@ class WhisperTranscriber:
     def _load_model(self):
         """Load the Whisper model"""
         print(f"Loading Whisper model: {self.model_size}...")
-        model_dir = CONFIG_DIR / "models"
-        model_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            self.model = WhisperModel(
-                self.model_size,
-                device="cpu",
-                compute_type="int8",
-                download_root=str(model_dir),
-            )
+            self.model = WhisperCPP(self.model_size)
             print("Model loaded successfully!")
         except Exception as e:
             print(f"Error loading model: {e}")
@@ -115,12 +125,7 @@ class WhisperTranscriber:
         if len(audio_data) == 0:
             return ""
 
-        segments, _ = self.model.transcribe(
-            audio_data, language=language, beam_size=5, vad_filter=True
-        )
-
-        text = " ".join([segment.text for segment in segments])
-        return text.strip()
+        return self.model.transcribe(audio_data, language)
 
 
 class FloatingWindow(QWidget):
@@ -222,6 +227,10 @@ class JarvisVoiceApp:
         # Load config
         self.config = self._load_config()
 
+        # Load vocabulary and corrections
+        self.vocabulary = self._load_vocabulary()
+        self.corrections = self._load_corrections()
+
         # Initialize components
         self.recorder = AudioRecorder()
         self.transcriber = None
@@ -244,7 +253,7 @@ class JarvisVoiceApp:
         self.status_item = rumps.MenuItem("Status: Loading model...")
 
         # Menu bar app
-        self.app = rumps.App("Jarvis Voice", "🎤")
+        self.app = rumps.App("Jarvis Voice", "🎤", quit_button=None)
         self._setup_menu()
 
         # Start hotkey listener with right Option key
@@ -263,6 +272,49 @@ class JarvisVoiceApp:
                 json.dump(DEFAULT_CONFIG, f, indent=2)
             return DEFAULT_CONFIG.copy()
 
+    def _load_vocabulary(self) -> dict:
+        """Load or create vocabulary"""
+        if VOCAB_FILE.exists():
+            with open(VOCAB_FILE, "r") as f:
+                return {**DEFAULT_VOCABULARY, **json.load(f)}
+        else:
+            with open(VOCAB_FILE, "w") as f:
+                json.dump(DEFAULT_VOCABULARY, f, indent=2)
+            return DEFAULT_VOCABULARY.copy()
+
+    def _load_corrections(self) -> dict:
+        """Load or create corrections"""
+        if CORRECTIONS_FILE.exists():
+            with open(CORRECTIONS_FILE, "r") as f:
+                return {**DEFAULT_CORRECTIONS, **json.load(f)}
+        else:
+            with open(CORRECTIONS_FILE, "w") as f:
+                json.dump(DEFAULT_CORRECTIONS, f, indent=2)
+            return DEFAULT_CORRECTIONS.copy()
+
+    def _save_corrections(self):
+        """Save corrections to file"""
+        with open(CORRECTIONS_FILE, "w") as f:
+            json.dump(self.corrections, f, indent=2)
+
+    def _process_text_with_corrections(self, text: str) -> str:
+        """Apply auto-corrections and vocabulary to transcribed text"""
+        if not text:
+            return text
+
+        # Apply auto-corrections (case-insensitive matching)
+        corrections_map = self.corrections.get("auto_corrections", {})
+
+        # Sort by length (longest first) to avoid partial replacements
+        for wrong, correct in sorted(
+            corrections_map.items(), key=lambda x: len(x[0]), reverse=True
+        ):
+            # Case-insensitive replacement using pre-imported re module
+            pattern = re.compile(re.escape(wrong), re.IGNORECASE)
+            text = pattern.sub(correct, text)
+
+        return text
+
     def _save_config(self):
         """Save config to file"""
         with open(CONFIG_FILE, "w") as f:
@@ -271,13 +323,14 @@ class JarvisVoiceApp:
     def _init_model(self):
         """Initialize Whisper model"""
         try:
-            print("Initializing Whisper model...")
-            self.transcriber = WhisperTranscriber(self.config.get("model_size", "base"))
+            model_size = self.config.get("model_size", "base")
+            print(f"Loading model: {model_size}...", flush=True)
+            self.transcriber = WhisperTranscriber(model_size)
             self.model_loaded = True
             self.status_item.title = "Status: Ready"
-            print("Model initialized successfully")
+            print(f"Model loaded successfully: {model_size}", flush=True)
         except Exception as e:
-            print(f"Error loading model: {e}")
+            print(f"Error loading model: {e}", flush=True)
             import traceback
 
             traceback.print_exc()
@@ -293,8 +346,12 @@ class JarvisVoiceApp:
             rumps.MenuItem("Settings", callback=self._show_settings),
             rumps.MenuItem("Open Config Folder", callback=self._open_config),
             None,
+            rumps.MenuItem("📝 Add Correction", callback=self._add_correction),
+            rumps.MenuItem("📚 View Corrections", callback=self._view_corrections),
+            rumps.MenuItem("🗑️ Delete Correction", callback=self._delete_correction),
+            None,
             rumps.MenuItem("About", callback=self._show_about),
-            rumps.MenuItem("Quit", callback=self._quit),
+            rumps.MenuItem("Quit", callback=self._quit_app),
         ]
 
     def _get_hotkey_key(self):
@@ -314,7 +371,6 @@ class JarvisVoiceApp:
 
     def _start_hotkey_listener(self):
         """Start listening for global hotkeys - using right Option key"""
-        print("Hotkey listener started. Press and hold RIGHT Option key to record.")
 
         def on_press(key):
             try:
@@ -402,7 +458,10 @@ class JarvisVoiceApp:
             text = self.transcriber.transcribe(audio_data, language)
 
             if text:
-                print(f"Transcribed: {text}")
+                print(f"Transcribed (raw): {text}")
+                # Apply corrections
+                text = self._process_text_with_corrections(text)
+                print(f"Transcribed (corrected): {text}")
                 self.comm.update_status.emit("typing")
                 self.comm.type_text.emit(text)
             else:
@@ -454,8 +513,12 @@ After editing, restart Jarvis Voice.
         rumps.alert(title="Settings", message=settings_text)
 
     def _open_config(self, _):
-        """Open config folder in Finder"""
-        os.system(f'open "{CONFIG_DIR}"')
+        """Open config folder in Finder securely"""
+        try:
+            run(["open", str(CONFIG_DIR)], check=True)
+        except Exception as e:
+            print(f"Error opening config folder: {e}")
+            rumps.notification("Jarvis Voice", "Error", "Could not open config folder")
 
     def _show_about(self, _):
         """Show about dialog"""
@@ -464,23 +527,177 @@ After editing, restart Jarvis Voice.
             message="Jarvis Voice v1.2\n\nLocal speech-to-text for macOS\n\nPress and hold RIGHT OPTION KEY to record.\n\nPowered by OpenAI Whisper",
         )
 
-    def _quit(self, _):
-        """Quit the app"""
+    def _add_correction(self, _):
+        """Add a new auto-correction mapping"""
+        try:
+            # Get what the app typed wrong
+            wrong_text = rumps.Window(
+                title="Add Correction",
+                message="What did the app type incorrectly?\n\n(What it heard)",
+                default_text="",
+                dimensions=(400, 100),
+            ).run()
+
+            if wrong_text.clicked and wrong_text.text:
+                wrong = wrong_text.text.strip()
+
+                # Get what it should have typed
+                correct_text = rumps.Window(
+                    title="Add Correction",
+                    message=f"What should '{wrong}' be corrected to?\n\n(What you wanted)",
+                    default_text="",
+                    dimensions=(400, 100),
+                ).run()
+
+                if correct_text.clicked and correct_text.text:
+                    correct = correct_text.text.strip()
+
+                    # Add to corrections
+                    if "auto_corrections" not in self.corrections:
+                        self.corrections["auto_corrections"] = {}
+
+                    self.corrections["auto_corrections"][wrong] = correct
+                    self._save_corrections()
+
+                    rumps.notification(
+                        "Jarvis Voice",
+                        "✅ Correction Added",
+                        f"'{wrong}' → '{correct}'",
+                    )
+                    print(f"Added correction: '{wrong}' → '{correct}'")
+        except Exception as e:
+            print(f"Error adding correction: {e}")
+            rumps.notification(
+                "Jarvis Voice", "❌ Error", f"Could not add correction: {e}"
+            )
+
+    def _view_corrections(self, _):
+        """View all saved corrections"""
+        try:
+            corrections_map = self.corrections.get("auto_corrections", {})
+
+            if not corrections_map:
+                rumps.alert(
+                    title="Auto-Corrections",
+                    message="No corrections saved yet.\n\nUse '📝 Add Correction' to teach the app your words!",
+                )
+                return
+
+            # Format corrections list
+            corrections_text = "Saved Auto-Corrections:\n\n"
+            for wrong, correct in sorted(corrections_map.items()):
+                corrections_text += f"'{wrong}' → '{correct}'\n"
+
+            corrections_text += (
+                "\n💡 Tip: The app automatically replaces these words when typing."
+            )
+
+            rumps.alert(title="Auto-Corrections", message=corrections_text)
+        except Exception as e:
+            print(f"Error viewing corrections: {e}")
+            rumps.notification(
+                "Jarvis Voice", "❌ Error", f"Could not view corrections: {e}"
+            )
+
+    def _delete_correction(self, _):
+        """Delete a correction from the list"""
+        try:
+            corrections_map = self.corrections.get("auto_corrections", {})
+
+            if not corrections_map:
+                rumps.alert(
+                    title="Delete Correction",
+                    message="No corrections to delete.\n\nThe list is empty!",
+                )
+                return
+
+            # Create a window to select which correction to delete
+            corrections_list = "\n".join(
+                [
+                    f"{i + 1}. '{wrong}' → '{correct}'"
+                    for i, (wrong, correct) in enumerate(
+                        sorted(corrections_map.items())
+                    )
+                ]
+            )
+
+            response = rumps.Window(
+                title="Delete Correction",
+                message=f"Enter the number of the correction to delete:\n\n{corrections_list}",
+                default_text="",
+                dimensions=(400, 300),
+            ).run()
+
+            if response.clicked and response.text:
+                try:
+                    selection = int(response.text.strip())
+                    if 1 <= selection <= len(corrections_map):
+                        # Get the key to delete
+                        sorted_items = sorted(corrections_map.items())
+                        wrong_to_delete = sorted_items[selection - 1][0]
+                        correct_value = sorted_items[selection - 1][1]
+
+                        # Delete it
+                        del self.corrections["auto_corrections"][wrong_to_delete]
+                        self._save_corrections()
+
+                        rumps.notification(
+                            "Jarvis Voice",
+                            "✅ Correction Deleted",
+                            f"Removed: '{wrong_to_delete}' → '{correct_value}'",
+                        )
+                        print(
+                            f"Deleted correction: '{wrong_to_delete}' → '{correct_value}'"
+                        )
+                    else:
+                        rumps.notification(
+                            "Jarvis Voice",
+                            "❌ Invalid Selection",
+                            f"Please enter a number between 1 and {len(corrections_map)}",
+                        )
+                except ValueError:
+                    rumps.notification(
+                        "Jarvis Voice",
+                        "❌ Invalid Input",
+                        "Please enter a valid number",
+                    )
+        except Exception as e:
+            print(f"Error deleting correction: {e}")
+            rumps.notification(
+                "Jarvis Voice", "❌ Error", f"Could not delete correction: {e}"
+            )
+
+    def _quit_app(self, _=None):
+        """Quit the app and cleanup resources"""
+        print("Quitting Jarvis Voice...")
         if hasattr(self, "hotkey_listener"):
             self.hotkey_listener.stop()
-        self.qt_app.quit()
-        rumps.quit_application()
+        if hasattr(self, "qt_app"):
+            self.qt_app.quit()
+        return True  # Allow the quit to proceed
 
     def run(self):
         """Run the application"""
-        # Hide floating window initially
-        self.floating_window.hide()
+        try:
+            print("Starting run() method...")
+            # Hide floating window initially
+            self.floating_window.hide()
+            print("Floating window hidden")
 
-        # Create a rumps timer to process Qt events periodically
-        self._qt_timer = rumps.Timer(self._process_qt_events, 0.016)  # ~60fps
-        self._qt_timer.start()
+            # Create a rumps timer to process Qt events periodically
+            self._qt_timer = rumps.Timer(self._process_qt_events, 0.016)  # ~60fps
+            self._qt_timer.start()
+            print("Qt timer started")
 
-        self.app.run()
+            print("Starting rumps app.run()...")
+            self.app.run()
+            print("rumps app.run() completed")
+        except Exception as e:
+            print(f"Error in run(): {e}")
+            import traceback
+
+            traceback.print_exc()
+            raise
 
     def _process_qt_events(self, _):
         """Process Qt events to keep floating window responsive"""
