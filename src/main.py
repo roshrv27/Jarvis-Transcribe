@@ -64,8 +64,8 @@ class AudioRecorder:
         self.recording = False
         self.audio_data = []
         self.sample_rate = 16000
-        # Max 60 seconds of audio at 16kHz (safety limit)
-        self.max_chunks = int((16000 * 60) / 2048)
+        # Max 90 seconds of audio at 16kHz (safety limit)
+        self.max_chunks = int((16000 * 90) / 2048)
 
     def start_recording(self):
         """Start recording audio"""
@@ -416,6 +416,10 @@ class JarvisVoiceApp:
             return
 
         self.is_recording = False
+
+        # Play notification sound when recording ends
+        threading.Thread(target=self._play_recording_sound, daemon=True).start()
+
         audio_data = self.recorder.stop_recording()
         print("Recording stopped. Processing...")
 
