@@ -34,7 +34,8 @@ DEFAULT_CONFIG = {
     "model_size": "base",
     "language": "en",
     "auto_paste": True,
-    "recording_sound": "Ping",
+    "recording_sound_start": "Ping",
+    "recording_sound_end": "Ping",
 }
 
 AVAILABLE_SOUNDS = [
@@ -227,34 +228,52 @@ class JarvisVoiceApp:
             print(f"Error loading model: {e}", flush=True)
             self.status_item.title = f"Status: Error - {e}"
 
-    def _setup_menu(self):
-        """Setup menu bar menu"""
+    def _create_sound_submenu(self, config_key, callback_func):
+        """Create a sound selection submenu"""
         sound_menu = []
-        current_sound = self.config.get("recording_sound", "Ping")
+        current_sound = self.config.get(config_key, "Ping")
 
         sound_menu.append(
             rumps.MenuItem("🔊 Preview All Sounds", callback=self._preview_all_sounds)
         )
         sound_menu.append(None)
 
-        # Clear stored menu items
-        self.sound_menu_items = {}
-
         for sound_name, description in AVAILABLE_SOUNDS:
             prefix = "✓ " if sound_name == current_sound else "   "
             menu_item = rumps.MenuItem(
                 f"{prefix}{sound_name} - {description}",
-                callback=lambda sender, name=sound_name: self._select_sound(name),
+                callback=lambda sender, name=sound_name, key=config_key: callback_func(
+                    name, key
+                ),
             )
-            self.sound_menu_items[sound_name] = menu_item
+            # Store with unique key combining sound name and config key
+            self.sound_menu_items[f"{config_key}_{sound_name}"] = menu_item
             sound_menu.append(menu_item)
+
+        return sound_menu
+
+    def _setup_menu(self):
+        """Setup menu bar menu"""
+        # Clear stored menu items
+        self.sound_menu_items = {}
+
+        # Create start sound submenu
+        start_sound_menu = self._create_sound_submenu(
+            "recording_sound_start", self._select_sound
+        )
+
+        # Create end sound submenu
+        end_sound_menu = self._create_sound_submenu(
+            "recording_sound_end", self._select_sound
+        )
 
         self.app.menu = [
             self.status_item,
             None,
             rumps.MenuItem("Start Recording", callback=self._toggle_recording),
             None,
-            {"🔔 Recording Sound": sound_menu},
+            {"🔔 Start Sound": start_sound_menu},
+            {"🔕 End Sound": end_sound_menu},
             None,
             rumps.MenuItem("Settings", callback=self._show_settings),
             rumps.MenuItem("Open Config Folder", callback=self._open_config),
@@ -306,10 +325,11 @@ class JarvisVoiceApp:
         else:
             self._stop_recording()
 
-    def _play_recording_sound(self):
-        """Play notification sound"""
+    def _play_recording_sound(self, is_start=True):
+        """Play notification sound for start or end of recording"""
         try:
-            sound_name = self.config.get("recording_sound", "Ping")
+            config_key = "recording_sound_start" if is_start else "recording_sound_end"
+            sound_name = self.config.get(config_key, "Ping")
             run(
                 ["afplay", f"/System/Library/Sounds/{sound_name}.aiff"],
                 capture_output=True,
@@ -335,10 +355,10 @@ class JarvisVoiceApp:
 
         threading.Thread(target=play_all, daemon=True).start()
 
-    def _select_sound(self, sound_name):
-        """Select notification sound"""
+    def _select_sound(self, sound_name, config_key):
+        """Select notification sound for start or end"""
         try:
-            self.config["recording_sound"] = sound_name
+            self.config[config_key] = sound_name
             self._save_config()
 
             # Play selected sound
@@ -348,25 +368,31 @@ class JarvisVoiceApp:
                 timeout=5,
             )
 
+            sound_type = "Start" if config_key == "recording_sound_start" else "End"
             rumps.notification(
-                "Jarvis Voice", "🔔 Sound Selected", f"Recording sound: {sound_name}"
+                "Jarvis Voice",
+                f"🔔 {sound_type} Sound Selected",
+                f"Sound: {sound_name}",
             )
-            self._update_sound_menu_checkmarks()
-            print(f"Recording sound: {sound_name}")
+            self._update_sound_menu_checkmarks(config_key)
+            print(f"{sound_type} sound: {sound_name}")
         except Exception as e:
             print(f"Could not select sound: {e}")
 
-    def _update_sound_menu_checkmarks(self):
-        """Update menu checkmarks"""
+    def _update_sound_menu_checkmarks(self, config_key):
+        """Update menu checkmarks for specific sound type"""
         try:
-            current_sound = self.config.get("recording_sound", "Ping")
+            current_sound = self.config.get(config_key, "Ping")
             for sound_name, menu_item in self.sound_menu_items.items():
-                prefix = "✓ " if sound_name == current_sound else "   "
-                description = dict(AVAILABLE_SOUNDS).get(sound_name, "")
-                new_title = f"{prefix}{sound_name} - {description}"
-                menu_item.title = new_title
-                if hasattr(menu_item, "_menuitem") and menu_item._menuitem:
-                    menu_item._menuitem.setTitle_(new_title)
+                # Check if this menu item belongs to the config key being updated
+                if sound_name.startswith(f"{config_key}_"):
+                    actual_sound = sound_name.replace(f"{config_key}_", "")
+                    prefix = "✓ " if actual_sound == current_sound else "   "
+                    description = dict(AVAILABLE_SOUNDS).get(actual_sound, "")
+                    new_title = f"{prefix}{actual_sound} - {description}"
+                    menu_item.title = new_title
+                    if hasattr(menu_item, "_menuitem") and menu_item._menuitem:
+                        menu_item._menuitem.setTitle_(new_title)
         except Exception as e:
             print(f"Could not update menu: {e}")
 
@@ -406,7 +432,9 @@ class JarvisVoiceApp:
         threading.Thread(target=self._get_active_app, daemon=True).start()
 
         self.is_recording = True
-        threading.Thread(target=self._play_recording_sound, daemon=True).start()
+        threading.Thread(
+            target=self._play_recording_sound, args=(True,), daemon=True
+        ).start()
 
         if self.recorder.start_recording():
             print("Recording started...")
@@ -422,7 +450,9 @@ class JarvisVoiceApp:
         self.is_recording = False
 
         # Play notification sound when recording ends
-        threading.Thread(target=self._play_recording_sound, daemon=True).start()
+        threading.Thread(
+            target=self._play_recording_sound, args=(False,), daemon=True
+        ).start()
 
         audio_data = self.recorder.stop_recording()
         print("Recording stopped. Processing...")
