@@ -16,8 +16,9 @@ A fast, local speech-to-text app for macOS that types directly into any applicat
 ### Prerequisites
 - macOS 10.15 (Catalina) or later
 - Python 3.10+ (will be installed if not present)
-- ~200MB disk space
+- ~800MB disk space (for app + distil-large-v3 model)
 - Terminal access
+- Internet connection (for model download)
 
 ### Install from GitHub (3 Steps)
 
@@ -90,24 +91,38 @@ source ~/.zshrc
 Edit `~/.jarvisvoice/config.json`:
 ```json
 {
-  "hotkey": "alt_r",          // Right Option key (hardcoded in this version)
-  "model_size": "base",       // Options: tiny, base, small, medium, large-v3
+  "hotkey": "alt_r",          // Right Option key (hardcoded)
+  "model_size": "distil-large-v3",  // Default: 6x faster than base, minimal quality loss
   "language": "en",           // Language code (en, es, fr, de, etc.)
   "auto_paste": true,         // Auto-add space after text
   "typing_delay": 0.01        // Delay before typing
 }
 ```
 
+**Model Options:**
+- `distil-large-v3` (Default) - 6x faster than base, ~756MB, excellent quality
+- `distil-small.en` - Ultra fast, ~166MB, good for resource-constrained devices
+- `base` - Original model, ~150MB, good baseline
+- `tiny` - Fastest, ~39MB, basic quality
+
 **Note:** Changing the hotkey requires editing `src/main.py` and restarting the app.
 
 ### Available Models
+
 | Model | Size | Speed | Accuracy | Best For |
 |-------|------|-------|----------|----------|
-| tiny | ~39MB | ⚡ Fastest | Basic | Testing only |
-| base | ~150MB | ⚡ Fast | Good ✅ | **Default** - Best balance |
-| small | ~466MB | 🐢 Slower | Better | Better accuracy |
-| medium | ~1.5GB | 🐢 Slow | High | High accuracy |
-| large-v3 | ~3GB | 🐌 Slowest | Best | Maximum accuracy |
+| **distil-large-v3** | ~756MB | ⚡⚡ 6x faster | Excellent ✅ | **Default** - Best speed/quality balance |
+| distil-small.en | ~166MB | ⚡⚡⚡ 8x faster | Good | Resource-constrained devices |
+| base | ~150MB | ⚡ Fast | Good | Good baseline |
+| tiny | ~39MB | ⚡⚡⚡ Fastest | Basic | Testing only |
+
+**Why Distil-Whisper?**
+- **6x faster** than standard Whisper
+- **49% smaller** than full Whisper Large
+- Only **1% word error rate** difference vs full model
+- Perfect for real-time transcription
+
+**Note:** First run will download ~756MB model (distil-large-v3). This takes 2-3 minutes depending on internet speed.
 
 ## 🛠️ Troubleshooting
 
