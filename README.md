@@ -56,13 +56,13 @@ flowchart TB
 ## ✨ Features
 
 - 🎯 **Right Option Key** - Press and hold to record (up to 90 seconds)
-- 🔊 **Dual Audio Feedback** - Notification sound on start AND stop
+- 🔊 **Dual Audio Feedback** - Choose separate notification sounds for start AND stop
 - 📝 **Auto-Corrections** - Teach the AI your custom words and phrases
 - 🧠 **Smart NLP** - Handles accents, background noise, technical terms
 - 💻 **Focus Restoration** - Returns to your previous app before typing
 - 🔒 **100% Local** - Neural network runs on your Mac (Metal GPU)
 - ⚡ **Fast** - Real-time transcription with Metal acceleration
-- 🎨 **Menu Bar App** - Clean interface with 14 notification sounds
+- 🎨 **Menu Bar App** - Clean interface with 14 notification sounds for each event
 - 🌍 **Multi-language** - Supports 99 languages via AI language detection
 
 ## 🚀 Performance
@@ -131,7 +131,8 @@ Edit `~/.jarvisvoice/config.json`:
   "model_size": "base",
   "language": "en",
   "auto_paste": true,
-  "recording_sound": "Ping"
+  "recording_sound_start": "Ping",
+  "recording_sound_end": "Ping"
 }
 ```
 
@@ -147,7 +148,7 @@ Edit `~/.jarvisvoice/config.json`:
 
 ### Notification Sounds
 
-Choose from 14 macOS system sounds:
+Choose **separate sounds** for start and end of recording from 14 macOS system sounds:
 - **Ping** (default) - Clean, high-pitched
 - **Tink** - Light metallic tap  
 - **Pop** - Bubble pop
@@ -155,7 +156,11 @@ Choose from 14 macOS system sounds:
 - **Hero** - Triumphant fanfare
 - ...and 9 more!
 
-Access via: 🎤 Menu → 🔔 Recording Sound
+**Access via:**
+- 🎤 Menu → 🔔 **Start Sound** - Sound when recording begins
+- 🎤 Menu → 🔕 **End Sound** - Sound when recording stops
+
+*Example: Use "Ping" for start and "Pop" for end to easily distinguish them!*
 
 ## 📝 Auto-Corrections (NLP Enhancement)
 
