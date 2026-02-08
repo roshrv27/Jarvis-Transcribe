@@ -117,12 +117,9 @@ class WhisperTranscriber:
 
     def _load_model(self):
         """Load the Whisper model"""
-        print(f"Loading Whisper model: {self.model_size}...")
         try:
             self.model = WhisperCPP(self.model_size)
-            print("Model loaded successfully!")
         except Exception as e:
-            print(f"Error loading model: {e}")
             raise
 
     def transcribe(self, audio_data: np.ndarray, language: str = "en") -> str:
