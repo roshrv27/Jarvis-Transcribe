@@ -5,13 +5,13 @@ A minimalistic, high-performance local speech-to-text app for macOS powered by O
 ## ✨ Features
 
 - 🎯 **Right Option Key** - Press and hold to record, release to transcribe
-- 🔊 **Audio Feedback** - Choose from 14 notification sounds to indicate recording start
+- 🔊 **Audio Feedback** - Choose from 14 notification sounds (plays on start & stop)
 - 📝 **Auto-Corrections** - Teach the app your custom words and phrases
 - 💻 **Smart Typing** - Automatically restores focus to your previous app before typing
 - 🔒 **100% Local** - Uses Whisper.cpp with Metal GPU, no internet required
 - ⚡ **Fast Performance** - ~1.5-2x real-time transcription on Apple Silicon
 - 🎨 **Menu Bar App** - Clean interface with easy access to all settings
-- 🧠 **Memory Safe** - Auto-limits recording to 60 seconds max
+- 🧠 **Memory Safe** - Auto-limits recording to 90 seconds max
 - 🌍 **Multi-language** - Supports 99 languages
 
 ## 🏗️ Architecture
@@ -26,7 +26,7 @@ flowchart TB
     subgraph Audio["🎵 Audio Processing"]
         C -->|Start| D[AudioRecorder]
         D --> E[SoundDevice Stream]
-        E --> F[Memory-Efficient Buffer<br/>deque maxlen=468]
+        E --> F[Memory-Efficient Buffer<br/>deque maxlen=703]
         C -->|Stop| G[Concatenate Audio]
     end
 
@@ -93,7 +93,7 @@ sequenceDiagram
 | Metric | Value |
 |--------|-------|
 | Recording Latency | ~128ms (imperceptible) |
-| Memory Usage | Capped at ~5MB (60s max) |
+| Memory Usage | Capped at ~7.5MB (90s max) |
 | Transcription Speed | 1.5-2x real-time (Apple Silicon) |
 | Total Pipeline | 2-4 seconds for 5s speech |
 | CPU Usage | Minimal during recording |
@@ -143,9 +143,9 @@ python src/main.py
 ```
 
 ### How to use:
-1. **Hold Right Option key** 🔊 hear notification sound
-2. **Speak clearly** - unlimited duration (60s max)
-3. **Release key** - transcription starts automatically
+1. **Hold Right Option key** 🔊 hear notification sound (recording starts)
+2. **Speak clearly** - record up to 90 seconds
+3. **Release key** 🔊 hear notification sound (recording stops)
 4. **Text appears** in your active application ✨
 
 ## ⚙️ Configuration
@@ -240,7 +240,7 @@ JarvisVoice/
 - **Channels:** Mono (1 channel)
 - **Format:** 32-bit float (native)
 - **Blocksize:** 2048 samples (~128ms latency)
-- **Buffer:** Memory-capped deque (max 60 seconds)
+- **Buffer:** Memory-capped deque (max 90 seconds)
 
 ### AI/ML Stack
 - **Engine:** whisper.cpp (C++ implementation)
@@ -266,7 +266,7 @@ The app has been heavily optimized:
 
 - ✅ **Removed Qt GUI** - No more visual indicator (using audio instead)
 - ✅ **Eliminated 60fps timer** - Saved CPU cycles
-- ✅ **Memory-safe buffer** - Auto-limits to 60s max
+- ✅ **Memory-safe buffer** - Auto-limits to 90s max
 - ✅ **Non-blocking operations** - Async app detection
 - ✅ **Efficient audio concat** - Single operation
 - ✅ **Dictionary lookups** - O(1) for sound descriptions
