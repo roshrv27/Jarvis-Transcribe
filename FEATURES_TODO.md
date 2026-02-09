@@ -91,6 +91,50 @@ Replace visual floating window with audio notifications to prevent focus shift w
 
 ---
 
+### Feature 3: Fix Menu Quit Functionality
+**Status:** PLANNED (Not Implemented)
+**Priority:** HIGH
+**User Requested:** Yes (Feb 9, 2026)
+
+#### Description
+Fix the bug where selecting "Quit" from the menu bar does not work, while right-clicking the Python dock icon and selecting "Quit" does work.
+
+#### Current Behavior
+- ✅ Right-click Python in dock → Quit → **Works**
+- ❌ Menu bar → Quit → **Does NOT work**
+
+#### Requirements
+- Fix menu bar "Quit" functionality to properly quit the application
+- Ensure all resources are cleaned up (hotkey listener, Qt app, rumps)
+- Maintain working dock quit functionality
+- Clean shutdown without errors
+
+#### Implementation Details
+**Files to Modify:**
+- `src/main.py` - _quit_app() method
+
+**Technical Approach:**
+1. Debug why menu quit doesn't trigger properly
+2. Check rumps.App quit callback
+3. Ensure proper cleanup sequence:
+   - Stop hotkey listener
+   - Quit Qt application
+   - Allow rumps to exit
+4. May need to override quit behavior in rumps
+
+**Possible Causes:**
+- rumps quit_button=None setting
+- _quit_app() return value
+- Signal handling
+- Event loop issues
+
+#### User Benefits
+- Consistent quit behavior across all methods
+- Proper application cleanup
+- Better user experience
+
+---
+
 ## Template for Future Features
 
 ### Feature #: [Feature Name]
@@ -147,6 +191,8 @@ Replace visual floating window with audio notifications to prevent focus shift w
 
 ### Planned for Next Version (3.1):
 - Feature 1: 3-minute recording limit with FIFO
+- Feature 2: Audio notifications instead of visual cues
+- Feature 3: Fix menu quit functionality
 
 ---
 
