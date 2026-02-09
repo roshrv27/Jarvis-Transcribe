@@ -45,6 +45,52 @@ Implement a maximum 3-minute recording limit with automatic FIFO (First-In-First
 
 ---
 
+### Feature 2: Audio Notifications Instead of Visual Cues
+**Status:** PLANNED (Not Implemented)
+**Priority:** HIGH
+**User Requested:** Yes (Feb 9, 2026)
+
+#### Description
+Replace visual floating window with audio notifications to prevent focus shift when working in full-screen applications.
+
+#### Requirements
+- Remove floating window (red pill) completely
+- Add sound notification when recording starts (Right Option key pressed)
+- Add sound notification when recording stops (Right Option key released)
+- Menu option to select/customize start recording sound
+- Menu option to select/customize stop recording sound
+- Focus remains on user's typing location (no UI elements steal focus)
+- Default system sounds for notifications
+
+#### Implementation Details
+**Files to Modify:**
+- `src/main.py` - Remove FloatingWindow class, add audio playback
+- `whisper_cpp_wrapper.py` - No changes needed
+- Config files for sound preferences
+
+**Technical Approach:**
+1. Remove FloatingWindow class and all related code
+2. Remove PyQt6 dependency for floating window
+3. Import AVFoundation (NSSound) for macOS audio playback
+4. Add menu items for sound selection
+5. Store sound preferences in config.json
+6. Play sounds in _start_recording() and _stop_recording()
+
+**Audio Options:**
+- System default sounds (Glass, Hero, Sosumi, etc.)
+- Custom sound files (.wav, .mp3, .aiff)
+- Menu: "Recording Sound" → submenu with options
+- Menu: "Stop Recording Sound" → submenu with options
+
+#### User Benefits
+- No focus shift from typing location
+- Works perfectly in full-screen applications
+- Audio feedback is less distracting than visual popup
+- Customizable sounds for personal preference
+- Better for accessibility (users with visual impairments)
+
+---
+
 ## Template for Future Features
 
 ### Feature #: [Feature Name]
