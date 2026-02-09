@@ -1,0 +1,115 @@
+# Jarvis Voice - Features & Enhancement TODO List
+# File: FEATURES_TODO.md
+# Purpose: Track planned features for future implementation
+# Note: Ask user which feature to implement before making changes
+
+## Feature Implementation Priority Queue
+
+### Feature 1: 3-Minute Recording Limit with FIFO Buffer
+**Status:** PLANNED (Not Implemented)
+**Priority:** HIGH
+**User Requested:** Yes (Feb 9, 2026)
+
+#### Description
+Implement a maximum 3-minute recording limit with automatic FIFO (First-In-First-Out) buffer management.
+
+#### Requirements
+- Maximum recording duration: 3 minutes (180 seconds)
+- FIFO buffer: Keep only last 3 minutes of audio
+- If user records 5 minutes → process only minutes 2-5 (last 3 minutes)
+- Audio older than 3 minutes gets automatically discarded
+
+#### Implementation Details
+**Files to Modify:**
+- `src/main.py` - AudioRecorder class
+- `whisper_cpp_wrapper.py` - Process only last 3 minutes
+
+**Technical Approach:**
+1. Track total recording duration
+2. Maintain rolling buffer of last 180 seconds
+3. When stopping recording:
+   - Calculate total duration
+   - If > 180s: trim from beginning
+   - Process only last 180 seconds
+
+**Memory Calculation:**
+- 3 minutes @ 16kHz = ~5.4MB in RAM
+- WAV file ~110MB (conservative estimate)
+- Total memory: ~120MB (acceptable)
+
+#### User Benefits
+- Prevents memory issues
+- Keeps UI responsive
+- Sensible limit for voice dictation use case
+- Fair processing time (~30-45 seconds for 3 min audio)
+
+---
+
+## Template for Future Features
+
+### Feature #: [Feature Name]
+**Status:** PLANNED (Not Implemented)
+**Priority:** [LOW/MEDIUM/HIGH]
+**User Requested:** [Yes/No - Date]
+
+#### Description
+[Detailed description of the feature]
+
+#### Requirements
+- [List specific requirements]
+
+#### Implementation Details
+**Files to Modify:**
+- [List files]
+
+**Technical Approach:**
+1. [Step 1]
+2. [Step 2]
+
+#### User Benefits
+[Explain why this feature is valuable]
+
+---
+
+## Instructions for Implementation
+
+### Before Implementing ANY Feature:
+1. Ask user: "Which feature would you like me to implement?"
+2. User will specify feature number or name
+3. Review this file together
+4. Confirm implementation approach
+5. Only then make code changes
+
+### After Implementation:
+1. Update feature status to "IMPLEMENTED"
+2. Add implementation date
+3. Add any notes or limitations discovered
+4. Commit changes with clear message
+
+---
+
+## Version History
+
+### Current Version: 3.0
+**Release Date:** Feb 9, 2026
+**Features Included:**
+- Self-contained DMG installer
+- whisper.cpp with Metal GPU acceleration
+- Custom app icon
+- 3-4x faster than Python implementation
+- Real-time transcription (1.75s for 11s audio)
+
+### Planned for Next Version (3.1):
+- Feature 1: 3-minute recording limit with FIFO
+
+---
+
+## Notes
+- All features require explicit user confirmation before implementation
+- Maintain backwards compatibility when possible
+- Test on Apple Silicon before release
+- Update README.md with new features
+- Update release notes for each version
+
+**Last Updated:** Feb 9, 2026
+**Next Review:** When user requests feature implementation
